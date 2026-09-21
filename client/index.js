@@ -17,14 +17,13 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ && window.__ModuleL
             name: 'settings.section',
             id: 'prompt-studio-settings',
             order: 45,
-            label: () => 'Prompt Studio ⚡',
+            label: () => 'Prompt Studio',
             icon: 'sliders'
           }, (props) => {
             return React.createElement(PromptStudioView, { ctx, React });
           });
         });
       };
-
 
       function PromptStudioView({ ctx, React }) {
         const [state, setState] = React.useState(null);
@@ -37,17 +36,45 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ && window.__ModuleL
 
         const refreshState = async () => {
           try {
-            if (typeof host !== 'undefined' && host.call) {
-              const data = await host.call('prompt-studio:get-state');
+            const res = await fetch('/api/dsh-prompt-studio/state');
+            if (res.ok) {
+              const data = await res.json();
               setState(data);
               if (data && data.versions) {
                 const active = data.versions.find(v => v.id === data.currentActiveVersionId) || data.versions[0];
                 if (active) setCurrentPrompt(active.systemPrompt);
               }
+            } else {
+              fallbackState();
             }
           } catch (e) {
-            console.error('[PromptStudio Client] Failed to fetch state:', e);
+            console.warn('[PromptStudio Client] Fetch failed, using fallback:', e);
+            fallbackState();
           }
+        };
+
+        const fallbackState = () => {
+          const defaultData = {
+            currentActiveVersionId: 'v1-init',
+            versions: [{
+              id: 'v1-init',
+              version: 1,
+              name: 'Base Assistant',
+              description: 'Default DeepSeek Harness system instruction baseline',
+              systemPrompt: 'You are an elite coding assistant and software architect powered by DeepSeek Harness. Always deliver concise, robust, and cleanly typed solutions.',
+              createdAt: Date.now(),
+              metrics: { tokenCount: 28 }
+            }],
+            testCases: [{
+              id: 'tc-lru',
+              title: 'LRU Cache Implementation',
+              category: 'coding',
+              inputPrompt: 'Write a clean TypeScript LRU Cache class with get and put methods.'
+            }],
+            evalResults: []
+          };
+          setState(defaultData);
+          setCurrentPrompt(defaultData.versions[0].systemPrompt);
         };
 
         React.useEffect(() => {
@@ -60,11 +87,15 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ && window.__ModuleL
             return;
           }
           try {
-            await host.call('prompt-studio:commit-version', {
-              name: commitName,
-              description: commitDesc || 'Updated via Prompt Studio',
-              systemPrompt: currentPrompt,
-              tags: ['studio']
+            await fetch('/api/dsh-prompt-studio/commit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: commitName,
+                description: commitDesc || 'Updated via Prompt Studio',
+                systemPrompt: currentPrompt,
+                tags: ['studio']
+              })
             });
             setCommitName('');
             setCommitDesc('');
@@ -77,7 +108,11 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ && window.__ModuleL
 
         const handleActivate = async (versionId) => {
           try {
-            await host.call('prompt-studio:activate-version', { versionId });
+            await fetch('/api/dsh-prompt-studio/activate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ versionId })
+            });
             setStatusMsg('🚀 Active system prompt switched!');
             await refreshState();
           } catch (err) {
@@ -89,9 +124,13 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ && window.__ModuleL
           if (!state || !state.currentActiveVersionId) return;
           setEvalLoading(true);
           try {
-            await host.call('prompt-studio:run-eval', {
-              versionId: state.currentActiveVersionId,
-              testCaseId
+            await fetch('/api/dsh-prompt-studio/eval', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                versionId: state.currentActiveVersionId,
+                testCaseId
+              })
             });
             await refreshState();
             setStatusMsg('🎯 Benchmark test evaluated!');
@@ -101,6 +140,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ && window.__ModuleL
             setEvalLoading(false);
           }
         };
+
 
         if (!state) {
           return React.createElement('div', { style: { padding: '24px', color: '#888' } }, 'Loading Prompt Studio...');
