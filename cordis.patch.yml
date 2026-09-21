@@ -1,0 +1,7 @@
+# DeepSeek Harness Cordis Patch Profile for dsh-prompt-studio
+- id: dsh-prompt-studio
+  name: dsh-prompt-studio
+  disabled: false
+  config:
+    autoInjectPrompt: true
+    storagePath: ~/.dsh/prompt-studio

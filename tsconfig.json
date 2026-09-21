@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "declaration": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "typeRoots": [
+      "E:/AI/DeepSeek Harness/默认/gemini-flash-landing-page/node_modules/@types"
+    ]
+  },
+  "include": ["src/**/*"]
+}
+
