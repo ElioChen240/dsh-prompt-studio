@@ -2,24 +2,29 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ && window.__ModuleL
   window.__ModuleLoader__.load({
     id: "dsh-prompt-studio",
     factory: (require) => {
+      const module = { exports: {} };
+      const exports = module.exports;
       const React = require("react");
-      const clientPlugin = {
-        apply(ctx) {
-          const slots = ctx.get ? ctx.get('slots') : ctx.slots;
-          if (!slots) return;
 
-          slots.inject('settings.section', () => {
-            return slots.register({
-              name: 'settings.section',
-              id: 'prompt-studio-settings',
-              title: 'Prompt Studio ⚡',
-              order: 15
-            }, (props) => {
-              return React.createElement(PromptStudioView, { ctx, React });
-            });
+      exports.inject = ["slots"];
+
+      exports.apply = function(ctx) {
+        const slots = ctx.get ? ctx.get('slots') : ctx.slots;
+        if (!slots) return;
+
+        slots.inject('settings.section', () => {
+          return slots.register({
+            name: 'settings.section',
+            id: 'prompt-studio-settings',
+            order: 45,
+            label: () => 'Prompt Studio ⚡',
+            icon: 'sliders'
+          }, (props) => {
+            return React.createElement(PromptStudioView, { ctx, React });
           });
-        }
+        });
       };
+
 
       function PromptStudioView({ ctx, React }) {
         const [state, setState] = React.useState(null);
@@ -293,7 +298,7 @@ if (typeof window !== 'undefined' && window.__ModuleLoader__ && window.__ModuleL
         ]);
       }
 
-      return clientPlugin;
+      return module.exports;
     }
   });
 }
